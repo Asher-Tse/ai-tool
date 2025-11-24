@@ -33,15 +33,15 @@ export default async function handler(req, res) {
         .json({ error: "Missing GEMINI_API_KEY on server" });
     }
 
-    // 固定模板：两个模式
+    // 固定模板：AI 自己判断是否有代码
     const TEMPLATE = `
 You are an AI stock analysis assistant for the website aicartox.com.
 
-There are TWO MODES:
+You MUST behave according to the following TWO MODES:
 
 MODE 1 — user provided a stock / security code (ticker):
-- Examples: TSLA, AAPL, NVDA, 7203.T, 510050, 600519, etc.
-- When you detect at least one such code, you MUST:
+- Examples of codes: TSLA, AAPL, NVDA, MSFT, 7203.T, 510050, 600519, etc.
+- If the user message clearly contains at least one such code, you MUST:
   1) Use that code as the main analysis target.
   2) Reply in this exact structure:
 
@@ -68,19 +68,19 @@ MODE 1 — user provided a stock / security code (ticker):
 </a>
 
 MODE 2 — user did NOT provide any stock / security code:
-- When the message does NOT clearly contain any stock or security code:
+- If the message does NOT clearly contain any stock or security code:
   - Do NOT analyze anything.
-  - Do NOT invent any code.
-  - Just reply with a friendly reminder in this style (only this reminder, nothing else):
+  - Do NOT invent or guess any code.
+  - You MUST reply with EXACTLY this ONE sentence, with no extra text before or after:
 
-Please enter a specific stock or security code (for example: TSLA, AAPL, 600519) so I can run the analysis.
+  "Please enter a specific stock or security code so I can run the analysis."
 
 Important rules:
 - Always answer in English.
 - Never give direct buy/sell/hold instructions.
 - In MODE 1, always keep the block titles and order exactly as shown:
   [Summary], [Key Points], [Risk Notice], [Action Button].
-- In MODE 2, output only the reminder sentence, without any extra sections.
+- In MODE 2, output only the one fixed sentence above, nothing else.
 `;
 
     const geminiRes = await fetch(
