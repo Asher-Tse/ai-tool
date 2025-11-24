@@ -1,7 +1,7 @@
 // api/gemini-analyze.js
 
 export default async function handler(req, res) {
-  // CORS（先放宽，调通再说）
+  // CORS：先用宽松模式，方便调试
   const origin = req.headers.origin || "*";
   res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -67,3 +67,22 @@ export default async function handler(req, res) {
       console.error("Gemini API error:", geminiRes.status, errorText);
       return res.status(500).json({
         error: "Gemini API error",
+        status: geminiRes.status,
+        detail: errorText,
+      });
+    }
+
+    const data = await geminiRes.json();
+    const text =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "No analysis was generated. Please try again with a different question.";
+
+    return res.status(200).json({ result: text });
+  } catch (err) {
+    console.error("Server error:", err);
+    return res.status(500).json({
+      error: "Internal server error",
+      detail: String(err?.message || err),
+    });
+  }
+}
