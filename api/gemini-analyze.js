@@ -35,31 +35,32 @@ export default async function handler(req, res) {
         .json({ error: "Missing GEMINI_API_KEY on server" });
     }
 
-    const geminiRes = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" +
-        apiKey,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
+const geminiRes = await fetch(
+  "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=" +
+    apiKey,
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      contents: [
+        {
+          parts: [
             {
-              parts: [
-                {
-                  text:
-                    "You are an educational stock analysis assistant. " +
-                    "Answer in clear, simple English. Avoid giving direct investment advice; " +
-                    "always include a short note about risks.\n\nUser question: " +
-                    prompt,
-                },
-              ],
+              text:
+                "You are an educational stock analysis assistant. " +
+                "Answer in clear, simple English. Avoid giving direct investment advice; " +
+                "always include a short note about risks.\n\nUser question: " +
+                prompt,
             },
           ],
-        }),
-      }
-    );
+        },
+      ],
+    }),
+  }
+);
+
 
     if (!geminiRes.ok) {
       const errorText = await geminiRes.text();
