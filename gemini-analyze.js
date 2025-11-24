@@ -1,17 +1,19 @@
 // api/gemini-analyze.js
 
 export default async function handler(req, res) {
-  // 动态 / 放宽 CORS，开发阶段先这样，确保不会被浏览器拦
+  // CORS（先放宽，调通再说）
   const origin = req.headers.origin || "*";
   res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Vary", "Origin");
 
+  // 预检请求
   if (req.method === "OPTIONS") {
     return res.status(204).end();
   }
 
+  // 只允许 POST
   if (req.method !== "POST") {
     return res
       .status(405)
@@ -21,12 +23,13 @@ export default async function handler(req, res) {
   try {
     const { prompt } = req.body || {};
     if (!prompt || typeof prompt !== "string") {
-      return res.status(400).json({ error: "Missing prompt in request body" });
+      return res
+        .status(400)
+        .json({ error: "Missing prompt in request body" });
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      // 🚨 这里会直接告诉你服务器缺少环境变量
       return res
         .status(500)
         .json({ error: "Missing GEMINI_API_KEY on server" });
@@ -64,22 +67,3 @@ export default async function handler(req, res) {
       console.error("Gemini API error:", geminiRes.status, errorText);
       return res.status(500).json({
         error: "Gemini API error",
-        status: geminiRes.status,
-        detail: errorText,
-      });
-    }
-
-    const data = await geminiRes.json();
-    const text =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "No analysis was generated. Please try again with a different question.";
-
-    return res.status(200).json({ result: text });
-  } catch (err) {
-    console.error("Server error:", err);
-    return res.status(500).json({
-      error: "Internal server error",
-      detail: String(err?.message || err),
-    });
-  }
-}
