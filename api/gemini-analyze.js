@@ -1,19 +1,17 @@
 // api/gemini-analyze.js
 
 export default async function handler(req, res) {
-  // CORS: relaxed for debugging; you can restrict later
+  // CORS：开发阶段放宽
   const origin = req.headers.origin || "*";
   res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Vary", "Origin");
 
-  // Preflight
   if (req.method === "OPTIONS") {
     return res.status(204).end();
   }
 
-  // Only POST
   if (req.method !== "POST") {
     return res
       .status(405)
@@ -34,34 +32,81 @@ export default async function handler(req, res) {
         .status(500)
         .json({ error: "Missing GEMINI_API_KEY on server" });
     }
-    
-const geminiRes = await fetch(
-  "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=" +
-    apiKey,
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [
+
+    // 固定模板：两个模式
+    const TEMPLATE = `
+You are an AI stock analysis assistant for the website aicartox.com.
+
+There are TWO MODES:
+
+MODE 1 — user provided a stock / security code (ticker):
+- Examples: TSLA, AAPL, NVDA, 7203.T, 510050, 600519, etc.
+- When you detect at least one such code, you MUST:
+  1) Use that code as the main analysis target.
+  2) Reply in this exact structure:
+
+[Summary]
+- Very short overview of this stock or code (1–2 sentences).
+
+[Key Points]
+1. Key factor 1 (for example: recent trend, volatility, valuation, or sector context).
+2. Key factor 2.
+3. Key factor 3.
+
+[Risk Notice]
+- Short reminder that this is for education only, markets are risky, and this is not investment advice.
+
+[Action Button]
+- HTML button for the user to get the full report.
+- Use EXACTLY this HTML (replace THE_MAIN_CODE with the main stock code you detected):
+
+<a href="https://aicartox.com/report?symbol=THE_MAIN_CODE"
+   class="ai-report-button"
+   target="_blank"
+   rel="noopener noreferrer">
+  Get full analysis report &amp; 99% prediction win-rate
+</a>
+
+MODE 2 — user did NOT provide any stock / security code:
+- When the message does NOT clearly contain any stock or security code:
+  - Do NOT analyze anything.
+  - Do NOT invent any code.
+  - Just reply with a friendly reminder in this style (only this reminder, nothing else):
+
+Please enter a specific stock or security code (for example: TSLA, AAPL, 600519) so I can run the analysis.
+
+Important rules:
+- Always answer in English.
+- Never give direct buy/sell/hold instructions.
+- In MODE 1, always keep the block titles and order exactly as shown:
+  [Summary], [Key Points], [Risk Notice], [Action Button].
+- In MODE 2, output only the reminder sentence, without any extra sections.
+`;
+
+    const geminiRes = await fetch(
+      "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=" +
+        apiKey,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
             {
-              text:
-                "You are an educational stock analysis assistant. " +
-                "Answer in clear, simple English. Avoid giving direct investment advice; " +
-                "always include a short note about risks.\n\nUser question: " +
-                prompt,
+              parts: [
+                {
+                  text:
+                    TEMPLATE +
+                    "\n\nUser message:\n" +
+                    prompt,
+                },
+              ],
             },
           ],
-        },
-      ],
-    }),
-  }
-);
-
-
+        }),
+      }
+    );
 
     if (!geminiRes.ok) {
       const errorText = await geminiRes.text();
