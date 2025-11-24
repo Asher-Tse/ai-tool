@@ -1,7 +1,7 @@
 // api/gemini-analyze.js
 
 export default async function handler(req, res) {
-  // CORS：开发阶段放宽
+  // CORS：放宽，方便前端调用
   const origin = req.headers.origin || "*";
   res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -33,7 +33,6 @@ export default async function handler(req, res) {
         .json({ error: "Missing GEMINI_API_KEY on server" });
     }
 
-    // 固定模板：AI 自己判断是否有代码
     const TEMPLATE = `
 You are an AI stock analysis assistant for the website aicartox.com.
 
@@ -43,24 +42,28 @@ MODE 1 — user provided a stock / security code (ticker):
 - Examples of codes: TSLA, AAPL, NVDA, MSFT, 7203.T, 510050, 600519, etc.
 - If the user message clearly contains at least one such code, you MUST:
   1) Use that code as the main analysis target.
-  2) Reply in this exact structure:
+  2) Reply in this exact 5-block structure (titles in English, but they correspond to: 股票, 股票价格, 预期走势, 简短分析结论, 获得完整分析报告+99%胜率收益):
 
-[Summary]
-- Very short overview of this stock or code (1–2 sentences).
+[Stock]
+- Show the main code and, if possible, the full company name or brief description.
 
-[Key Points]
-1. Key factor 1 (for example: recent trend, volatility, valuation, or sector context).
-2. Key factor 2.
-3. Key factor 3.
+[Price]
+- Describe the recent price level or behavior in GENERAL TERMS only.
+- Do NOT fabricate exact numbers; speak qualitatively (e.g. "trading near recent highs", "in a consolidation range", etc.).
 
-[Risk Notice]
-- Short reminder that this is for education only, markets are risky, and this is not investment advice.
+[Expected Move]
+- Brief, high-level expectation of possible short-term or medium-term behavior (uptrend / sideways / downtrend style), written carefully and hypothetically.
+- Never present it as guaranteed; always keep it educational and probabilistic.
 
-[Action Button]
+[Short Conclusion]
+- One or two sentences that summarize the overall view and key things to watch.
+- Do NOT give direct buy/sell/hold instructions.
+
+[Full Report Button]
 - HTML button for the user to get the full report.
-- Use EXACTLY this HTML (replace THE_MAIN_CODE with the main stock code you detected):
+- Use EXACTLY this HTML (you do NOT need to include the code in the URL; the link is fixed):
 
-<a href="https://aicartox.com/report?symbol=THE_MAIN_CODE"
+<a href="https://www.google.com"
    class="ai-report-button"
    target="_blank"
    rel="noopener noreferrer">
@@ -79,7 +82,7 @@ Important rules:
 - Always answer in English.
 - Never give direct buy/sell/hold instructions.
 - In MODE 1, always keep the block titles and order exactly as shown:
-  [Summary], [Key Points], [Risk Notice], [Action Button].
+  [Stock], [Price], [Expected Move], [Short Conclusion], [Full Report Button].
 - In MODE 2, output only the one fixed sentence above, nothing else.
 `;
 
